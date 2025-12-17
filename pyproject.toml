@@ -4,19 +4,23 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mapbox-tileset-uploader"
-version = "0.1.0"
-description = "A CLI tool to upload GeoJSON and TopoJSON files to Mapbox as vector tilesets"
+version = "0.2.0"
+description = "A CLI tool to upload GeoJSON, TopoJSON, Shapefile, GeoPackage, and other GIS formats to Mapbox as vector tilesets"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
 authors = [
-    { name = "MapLumi", email = "info@maplumi.com" }
+    { name = "OCHA ROSEA IM" }
 ]
 keywords = [
     "mapbox",
     "tilesets",
     "geojson",
     "topojson",
+    "shapefile",
+    "geopackage",
+    "kml",
+    "geoparquet",
     "vector-tiles",
     "gis",
     "mapping"
@@ -43,7 +47,42 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Individual format support
+shapefile = ["pyshp>=2.3.0"]
+fiona = ["fiona>=1.9.0"]
+geoparquet = ["geopandas>=0.14.0", "pyarrow>=14.0.0"]
+gpx = ["gpxpy>=1.6.0"]
+validation = ["shapely>=2.0.0"]
+
+# Format bundles
+all-formats = [
+    "pyshp>=2.3.0",
+    "fiona>=1.9.0",
+    "geopandas>=0.14.0",
+    "pyarrow>=14.0.0",
+    "gpxpy>=1.6.0",
+    "shapely>=2.0.0",
+]
+
+# Development
 dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "types-requests>=2.28.0",
+    "shapely>=2.0.0",
+]
+
+# All optional dependencies
+all = [
+    "pyshp>=2.3.0",
+    "fiona>=1.9.0",
+    "geopandas>=0.14.0",
+    "pyarrow>=14.0.0",
+    "gpxpy>=1.6.0",
+    "shapely>=2.0.0",
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "black>=23.0.0",
@@ -57,10 +96,10 @@ mapbox-tileset-uploader = "mapbox_tileset_uploader.cli:main"
 mtu = "mapbox_tileset_uploader.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/maplumi/mapbox-tileset-uploader"
-Documentation = "https://github.com/maplumi/mapbox-tileset-uploader#readme"
-Repository = "https://github.com/maplumi/mapbox-tileset-uploader"
-Issues = "https://github.com/maplumi/mapbox-tileset-uploader/issues"
+Homepage = "https://github.com/im4sea/mapbox-tileset-uploader"
+Documentation = "https://github.com/im4sea/mapbox-tileset-uploader#readme"
+Repository = "https://github.com/im4sea/mapbox-tileset-uploader"
+Issues = "https://github.com/im4sea/mapbox-tileset-uploader/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mapbox_tileset_uploader"]

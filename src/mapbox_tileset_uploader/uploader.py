@@ -9,11 +9,13 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Union
 
 import requests
 
-from mapbox_tileset_uploader.converter import convert_topojson_to_geojson
+from mapbox_tileset_uploader.converters import get_converter, get_supported_formats
+from mapbox_tileset_uploader.converters.base import ConversionResult
+from mapbox_tileset_uploader.validators import GeometryValidator, ValidationResult
 
 
 @dataclass
@@ -36,18 +38,46 @@ class TilesetConfig:
             self.source_id = self.tileset_id.replace(".", "-")
 
 
+@dataclass
+class UploadResult:
+    """Result of a tileset upload operation."""
+
+    success: bool
+    tileset_id: str
+    source_id: str | None
+    steps: Dict[str, bool] = field(default_factory=dict)
+    warnings: List[str] = field(default_factory=list)
+    validation_result: ValidationResult | None = None
+    conversion_result: ConversionResult | None = None
+    job_id: str = ""
+    job_status: str = ""
+    error: str = ""
+    dry_run: bool = False
+
+
 class TilesetUploader:
     """
-    Upload GeoJSON and TopoJSON files to Mapbox as vector tilesets.
+    Upload GeoJSON and other GIS formats to Mapbox as vector tilesets.
 
     This class wraps the mapbox-tilesets CLI to provide a Python interface
     for uploading geographic data to Mapbox Tiling Service (MTS).
+
+    Supports multiple input formats through the modular converter system:
+    - GeoJSON (.geojson, .json)
+    - TopoJSON (.topojson)
+    - Shapefile (.shp, .zip)
+    - GeoPackage (.gpkg)
+    - KML/KMZ (.kml, .kmz)
+    - FlatGeobuf (.fgb)
+    - GeoParquet (.parquet, .geoparquet)
+    - GPX (.gpx)
     """
 
     def __init__(
         self,
         access_token: str | None = None,
         username: str | None = None,
+        validate_geometry: bool = True,
     ) -> None:
         """
         Initialize the uploader.
@@ -55,9 +85,11 @@ class TilesetUploader:
         Args:
             access_token: Mapbox access token. If not provided, uses MAPBOX_ACCESS_TOKEN env var.
             username: Mapbox username. If not provided, uses MAPBOX_USERNAME env var.
+            validate_geometry: Whether to validate geometries and warn about issues.
         """
         self.access_token = access_token or os.environ.get("MAPBOX_ACCESS_TOKEN")
         self.username = username or os.environ.get("MAPBOX_USERNAME")
+        self.validate_geometry = validate_geometry
 
         if not self.access_token:
             raise ValueError(
@@ -73,130 +105,162 @@ class TilesetUploader:
         # Set environment variable for tilesets CLI
         os.environ["MAPBOX_ACCESS_TOKEN"] = self.access_token
 
+        # Initialize validator
+        self._validator = GeometryValidator() if validate_geometry else None
+
     def upload_from_url(
         self,
         url: str,
         config: TilesetConfig,
+        format_hint: str | None = None,
         work_dir: str | None = None,
         dry_run: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> UploadResult:
         """
         Download data from URL and upload to Mapbox.
 
         Args:
-            url: URL to download GeoJSON or TopoJSON from
-            config: Tileset configuration
-            work_dir: Working directory for temporary files
-            dry_run: If True, validate but don't upload
+            url: URL to download GeoJSON or other GIS format from.
+            config: Tileset configuration.
+            format_hint: Explicit format name (auto-detected if not provided).
+            work_dir: Working directory for temporary files.
+            dry_run: If True, validate but don't upload.
 
         Returns:
-            Dictionary with upload results
+            UploadResult with upload details.
         """
         work_path = Path(work_dir) if work_dir else Path(tempfile.mkdtemp())
         work_path.mkdir(parents=True, exist_ok=True)
 
         # Determine file type from URL
-        is_topojson = ".topojson" in url.lower() or "topojson" in url.lower()
-        ext = ".topojson" if is_topojson else ".geojson"
+        url_lower = url.lower()
+        ext = ".geojson"
+        for fmt_ext in [".topojson", ".shp", ".gpkg", ".kml", ".kmz", ".fgb", ".parquet", ".gpx"]:
+            if fmt_ext in url_lower:
+                ext = fmt_ext
+                break
+
         download_path = work_path / f"source{ext}"
-        geojson_path = work_path / "source.geojson"
 
         try:
             # Download the file
             self._download_file(url, download_path)
 
-            # Convert TopoJSON to GeoJSON if needed
-            if is_topojson:
-                geojson = self._convert_topojson(download_path)
-                with open(geojson_path, "w", encoding="utf-8") as f:
-                    json.dump(geojson, f)
-            else:
-                geojson_path = download_path
-
-            # Upload to Mapbox
-            return self.upload_from_file(geojson_path, config, dry_run=dry_run)
+            # Upload from the downloaded file
+            return self.upload_from_file(
+                download_path,
+                config,
+                format_hint=format_hint,
+                dry_run=dry_run,
+            )
 
         finally:
             # Clean up if using temp directory
             if not work_dir:
                 import shutil
-
                 shutil.rmtree(work_path, ignore_errors=True)
 
     def upload_from_file(
         self,
-        file_path: str | Path,
+        file_path: Union[str, Path],
         config: TilesetConfig,
+        format_hint: str | None = None,
         dry_run: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> UploadResult:
         """
-        Upload a GeoJSON or TopoJSON file to Mapbox.
+        Upload a GIS file to Mapbox.
 
         Args:
-            file_path: Path to the file to upload
-            config: Tileset configuration
-            dry_run: If True, validate but don't upload
+            file_path: Path to the file to upload.
+            config: Tileset configuration.
+            format_hint: Explicit format name (auto-detected if not provided).
+            dry_run: If True, validate but don't upload.
 
         Returns:
-            Dictionary with upload results
+            UploadResult with upload details.
         """
         file_path = Path(file_path)
-        results: Dict[str, Any] = {
-            "success": False,
-            "tileset_id": f"{self.username}.{config.tileset_id}",
-            "source_id": config.source_id,
-            "steps": {},
-        }
+        result = UploadResult(
+            success=False,
+            tileset_id=f"{self.username}.{config.tileset_id}",
+            source_id=config.source_id,
+            dry_run=dry_run,
+        )
 
         try:
-            # Convert TopoJSON if needed
-            if file_path.suffix.lower() == ".topojson":
-                geojson = self._convert_topojson(file_path)
-                temp_path = file_path.parent / f"{file_path.stem}.geojson"
-                with open(temp_path, "w", encoding="utf-8") as f:
-                    json.dump(geojson, f)
-                file_path = temp_path
+            # Get converter for the file format
+            converter = get_converter(format_name=format_hint, file_path=file_path)
 
-            # Validate GeoJSON
-            self._validate_geojson(file_path)
-            results["steps"]["validate"] = True
+            # Convert to GeoJSON
+            conversion = converter.convert(file_path)
+            result.conversion_result = conversion
+            result.warnings.extend(conversion.warnings)
+            result.steps["convert"] = True
+
+            geojson = conversion.geojson
+
+            # Validate geometry
+            if self._validator:
+                validation = self._validator.validate(geojson)
+                result.validation_result = validation
+                result.steps["validate"] = True
+
+                # Add validation warnings to result
+                for warning in validation.warnings:
+                    if warning.severity in ("warning", "error"):
+                        result.warnings.append(
+                            f"[{warning.warning_type}] {warning.message}"
+                        )
 
             if dry_run:
-                results["success"] = True
-                results["dry_run"] = True
-                return results
+                result.success = True
+                return result
 
-            # Upload source
-            self._upload_source(file_path, config.source_id)
-            results["steps"]["upload_source"] = True
+            # Write GeoJSON to temp file for upload
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                suffix=".geojson",
+                delete=False,
+                encoding="utf-8",
+            ) as f:
+                json.dump(geojson, f)
+                geojson_path = Path(f.name)
 
-            # Create or update tileset
-            full_tileset_id = f"{self.username}.{config.tileset_id}"
-            recipe = self._build_recipe(config)
+            try:
+                # Upload source
+                self._upload_source(geojson_path, config.source_id)
+                result.steps["upload_source"] = True
 
-            if self._tileset_exists(full_tileset_id):
-                self._update_recipe(full_tileset_id, recipe)
-                results["steps"]["update_recipe"] = True
-            else:
-                self._create_tileset(full_tileset_id, recipe, config)
-                results["steps"]["create_tileset"] = True
+                # Create or update tileset
+                full_tileset_id = f"{self.username}.{config.tileset_id}"
+                recipe = self._build_recipe(config)
 
-            # Publish tileset
-            job_id = self._publish_tileset(full_tileset_id)
-            results["steps"]["publish"] = True
-            results["job_id"] = job_id
+                if self._tileset_exists(full_tileset_id):
+                    self._update_recipe(full_tileset_id, recipe)
+                    result.steps["update_recipe"] = True
+                else:
+                    self._create_tileset(full_tileset_id, recipe, config)
+                    result.steps["create_tileset"] = True
 
-            # Wait for completion
-            status = self._wait_for_job(full_tileset_id, job_id)
-            results["steps"]["job_complete"] = True
-            results["job_status"] = status
+                # Publish tileset
+                job_id = self._publish_tileset(full_tileset_id)
+                result.steps["publish"] = True
+                result.job_id = job_id
 
-            results["success"] = status == "success"
+                # Wait for completion
+                status = self._wait_for_job(full_tileset_id, job_id)
+                result.steps["job_complete"] = True
+                result.job_status = status
+
+                result.success = status == "success"
+
+            finally:
+                geojson_path.unlink(missing_ok=True)
 
         except Exception as e:
-            results["error"] = str(e)
+            result.error = str(e)
 
-        return results
+        return result
 
     def _download_file(self, url: str, dest_path: Path) -> None:
         """Download a file from URL."""
@@ -206,29 +270,6 @@ class TilesetUploader:
         with open(dest_path, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
-
-    def _convert_topojson(self, file_path: Path) -> Dict[str, Any]:
-        """Convert TopoJSON file to GeoJSON."""
-        with open(file_path, "r", encoding="utf-8") as f:
-            topojson = json.load(f)
-        return convert_topojson_to_geojson(topojson)
-
-    def _validate_geojson(self, file_path: Path) -> None:
-        """Validate GeoJSON file."""
-        with open(file_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        if data.get("type") not in ("FeatureCollection", "Feature", "GeometryCollection"):
-            valid_types = ", ".join(data.get("features", [{}])[0].get("geometry", {}).keys())
-            if data.get("type") not in (
-                "Point",
-                "MultiPoint",
-                "LineString",
-                "MultiLineString",
-                "Polygon",
-                "MultiPolygon",
-            ):
-                raise ValueError(f"Invalid GeoJSON type: {data.get('type')}")
 
     def _run_tilesets_command(
         self,
@@ -251,7 +292,6 @@ class TilesetUploader:
         """Upload file to tileset source."""
         if source_id is None:
             raise ValueError("source_id is required for uploading")
-        full_source_id = f"{self.username}.{source_id}"
         self._run_tilesets_command(
             ["upload-source", "--replace", self.username, source_id, str(file_path)]
         )
@@ -324,12 +364,10 @@ class TilesetUploader:
     def _publish_tileset(self, tileset_id: str) -> str:
         """Publish tileset and return job ID."""
         result = self._run_tilesets_command(["publish", tileset_id])
-        # Parse job ID from output
         try:
             output = json.loads(result.stdout)
             return output.get("jobId", "")
         except json.JSONDecodeError:
-            # Try to extract from text output
             return ""
 
     def _wait_for_job(
@@ -380,7 +418,6 @@ class TilesetUploader:
 
     def delete_source(self, source_id: str) -> bool:
         """Delete a tileset source."""
-        full_id = f"{self.username}.{source_id}"
         result = self._run_tilesets_command(
             ["delete-source", "--force", self.username, source_id], check=False
         )
@@ -391,3 +428,8 @@ class TilesetUploader:
         full_id = f"{self.username}.{tileset_id}"
         result = self._run_tilesets_command(["delete", "--force", full_id], check=False)
         return result.returncode == 0
+
+    @staticmethod
+    def get_supported_formats() -> List[Dict[str, Any]]:
+        """Get list of supported input formats."""
+        return get_supported_formats()

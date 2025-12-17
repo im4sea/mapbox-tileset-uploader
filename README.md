@@ -1,6 +1,6 @@
 # Mapbox Tileset Uploader
 
-A CLI tool and Python library to upload GeoJSON and TopoJSON files to Mapbox as vector tilesets.
+A CLI tool and Python library to upload GIS data to Mapbox as vector tilesets. Supports multiple geospatial formats with a modular architecture.
 
 [![PyPI version](https://badge.fury.io/py/mapbox-tileset-uploader.svg)](https://badge.fury.io/py/mapbox-tileset-uploader)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -8,25 +8,131 @@ A CLI tool and Python library to upload GeoJSON and TopoJSON files to Mapbox as 
 
 ## Features
 
-- 📤 Upload GeoJSON and TopoJSON files to Mapbox Tiling Service (MTS)
+- 📤 Upload GIS files to Mapbox Tiling Service (MTS)
+- 🗺️ **Multi-format support**: GeoJSON, TopoJSON, Shapefile, GeoPackage, KML/KMZ, FlatGeobuf, GeoParquet, GPX
+- 🔍 **Geometry validation**: Warns about invalid geometries without modifying data
 - 🌐 Download and upload from remote URLs
-- 🔄 Automatic TopoJSON to GeoJSON conversion
+- 🔄 Automatic format detection and conversion to GeoJSON
 - ⚙️ Configurable zoom levels, layer names, and recipes
 - 🔧 Both CLI and Python API available
-- 📦 Installable via pip
+- 📦 Modular architecture with optional dependencies
+- 🧩 Extensible converter system
 
 ## Installation
+
+### Basic Installation (GeoJSON & TopoJSON only)
 
 ```bash
 pip install mapbox-tileset-uploader
 ```
 
-Or install from source:
+### With Optional Format Support
 
 ```bash
-git clone https://github.com/maplumi/mapbox-tileset-uploader.git
+# Shapefile support
+pip install mapbox-tileset-uploader[shapefile]
+
+# GeoPackage, KML, FlatGeobuf support (via fiona)
+pip install mapbox-tileset-uploader[fiona]
+
+# GeoParquet support
+pip install mapbox-tileset-uploader[geoparquet]
+
+# GPX support
+pip install mapbox-tileset-uploader[gpx]
+
+# Geometry validation (via shapely)
+pip install mapbox-tileset-uploader[validation]
+
+# All formats and validation
+pip install mapbox-tileset-uploader[all-formats]
+
+# All features including dev tools
+pip install mapbox-tileset-uploader[all]
+```
+
+### Install from Source
+
+```bash
+git clone https://github.com/im4sea/mapbox-tileset-uploader.git
 cd mapbox-tileset-uploader
-pip install -e .
+pip install -e ".[all]"
+```
+
+## Supported Formats
+
+| Format | Extensions | Dependencies | Notes |
+|--------|-----------|--------------|-------|
+| GeoJSON | `.geojson`, `.json` | None | Native support |
+| TopoJSON | `.topojson` | None | Full decoder with transform support |
+| Shapefile | `.shp`, `.zip` | `pyshp` | Supports zipped shapefiles |
+| GeoPackage | `.gpkg` | `fiona` | Supports layer selection |
+| KML/KMZ | `.kml`, `.kmz` | `fiona` | Handles zipped KMZ |
+| FlatGeobuf | `.fgb` | `fiona` | Cloud-optimized format |
+| GeoParquet | `.parquet`, `.geoparquet` | `geopandas`, `pyarrow` | Columnar format |
+| GPX | `.gpx` | `gpxpy` | Tracks, routes, waypoints |
+
+Check available formats with:
+```bash
+mtu formats
+```
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph Input["Input Formats"]
+        GeoJSON[GeoJSON]
+        TopoJSON[TopoJSON]
+        SHP[Shapefile]
+        GPKG[GeoPackage]
+        KML[KML/KMZ]
+        FGB[FlatGeobuf]
+        GPQ[GeoParquet]
+        GPX[GPX]
+    end
+
+    subgraph Converters["Format Converters"]
+        Registry[Converter Registry]
+        BaseConv[Base Converter]
+    end
+
+    subgraph Processing["Processing"]
+        Validator[Geometry Validator]
+        Warnings[Warnings Only]
+    end
+
+    subgraph Output["Mapbox"]
+        MTS[Mapbox Tiling Service]
+        Tileset[Vector Tileset]
+    end
+
+    Input --> Registry
+    Registry --> BaseConv
+    BaseConv --> |GeoJSON| Validator
+    Validator --> |Validate| Warnings
+    Validator --> |Upload| MTS
+    MTS --> Tileset
+```
+
+```mermaid
+flowchart TD
+    A[Upload Command] --> B{Source Type}
+    B -->|URL| C[Download File]
+    B -->|File| D[Read File]
+    C --> E[Detect Format]
+    D --> E
+    E --> F[Get Converter]
+    F --> G[Convert to GeoJSON]
+    G --> H{Validate?}
+    H -->|Yes| I[Geometry Validator]
+    H -->|No| J[Upload Source]
+    I --> |Warnings| K[Log Warnings]
+    K --> J
+    J --> L[Create/Update Tileset]
+    L --> M[Publish Tileset]
+    M --> N[Wait for Job]
+    N --> O[Success]
 ```
 
 ## Prerequisites
@@ -84,6 +190,40 @@ mtu upload \
 
 ```bash
 mtu convert input.topojson output.geojson --pretty
+```
+
+### Convert Any Supported Format
+
+```bash
+# Shapefile to GeoJSON
+mtu convert boundaries.shp boundaries.geojson
+
+# GeoPackage to GeoJSON
+mtu convert data.gpkg output.geojson
+
+# Zipped shapefile
+mtu convert archive.zip output.geojson
+```
+
+### Validate GIS Files
+
+Validate geometry without uploading:
+
+```bash
+mtu validate data.geojson
+mtu validate boundaries.shp --verbose
+```
+
+### Show Available Formats
+
+```bash
+mtu formats
+```
+
+### Show Configuration Help
+
+```bash
+mtu info
 ```
 
 ### List Resources
@@ -151,24 +291,90 @@ results = uploader.upload_from_file(
     config=config
 )
 
-if results["success"]:
-    print(f"Tileset uploaded: {results['tileset_id']}")
+if results.success:
+    print(f"Tileset uploaded: {results.tileset_id}")
+    if results.warnings:
+        print(f"Warnings: {results.warnings}")
 else:
-    print(f"Error: {results.get('error')}")
+    print(f"Error: {results.error}")
+```
+
+### Upload with Validation
+
+```python
+# Enable geometry validation (warns but doesn't modify data)
+uploader = TilesetUploader(validate_geometry=True)
+
+results = uploader.upload_from_file("data.geojson", config)
+
+# Check validation results
+if results.validation_result:
+    for warning in results.validation_result.warnings:
+        print(f"  [{warning.severity}] {warning.message}")
+```
+
+### Using Format Converters
+
+```python
+from mapbox_tileset_uploader.converters import get_converter, get_supported_formats
+
+# List available formats
+formats = get_supported_formats()
+for fmt in formats:
+    status = "✓" if fmt["available"] else "✗ (missing deps)"
+    print(f"{fmt['format_name']}: {status}")
+
+# Convert any supported format
+converter = get_converter(file_path="data.shp")  # Auto-detect by extension
+result = converter.convert("data.shp")
+
+print(f"Converted {result.feature_count} features from {result.source_format}")
+print(f"Warnings: {result.warnings}")
+
+# Or specify format explicitly
+converter = get_converter(format_name="geopackage")
+result = converter.convert("data.gpkg", layer_name="boundaries")
+```
+
+### Geometry Validation
+
+```python
+from mapbox_tileset_uploader import validate_geojson, GeometryValidator
+
+# Quick validation
+result = validate_geojson(geojson_data)
+print(f"Valid: {result.valid}, Features: {result.feature_count}")
+
+# Custom validation options
+validator = GeometryValidator(
+    check_coordinates=True,   # Check coordinate bounds
+    check_winding=True,       # Check polygon winding order  
+    check_duplicates=True,    # Check duplicate vertices
+    check_closure=True,       # Check ring closure
+    check_intersections=True, # Check self-intersections (requires shapely)
+    max_warnings=100          # Limit warnings
+)
+
+result = validator.validate(geojson_data)
+for warning in result.warnings:
+    print(f"Feature {warning.feature_index}: {warning.message}")
 ```
 
 ### TopoJSON Conversion
 
 ```python
-from mapbox_tileset_uploader import convert_topojson_to_geojson
+from mapbox_tileset_uploader.converters import get_converter
 
-# From dictionary
-topojson_data = {...}
-geojson = convert_topojson_to_geojson(topojson_data)
+# Convert TopoJSON to GeoJSON
+converter = get_converter(format_name="topojson")
+result = converter.convert(topojson_data)
+geojson = result.geojson
 
 # From file
-from mapbox_tileset_uploader.converter import load_and_convert
-geojson = load_and_convert("data.topojson")
+result = converter.convert("data.topojson")
+
+# Select specific object in TopoJSON
+result = converter.convert(topojson_data, object_name="countries")
 ```
 
 ## Custom Recipes
@@ -246,9 +452,9 @@ jobs:
 ### Setup
 
 ```bash
-git clone https://github.com/maplumi/mapbox-tileset-uploader.git
+git clone https://github.com/im4sea/mapbox-tileset-uploader.git
 cd mapbox-tileset-uploader
-pip install -e ".[dev]"
+pip install -e ".[all]"
 ```
 
 ### Run Tests

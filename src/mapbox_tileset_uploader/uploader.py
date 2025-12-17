@@ -9,7 +9,7 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 import requests
 
@@ -30,7 +30,7 @@ class TilesetConfig:
     max_zoom: int = 10
     description: str = ""
     attribution: str = ""
-    recipe: Dict[str, Any] = field(default_factory=dict)
+    recipe: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Set defaults after initialization."""
@@ -45,8 +45,8 @@ class UploadResult:
     success: bool
     tileset_id: str
     source_id: str | None
-    steps: Dict[str, bool] = field(default_factory=dict)
-    warnings: List[str] = field(default_factory=list)
+    steps: dict[str, bool] = field(default_factory=dict)
+    warnings: list[str] = field(default_factory=list)
     validation_result: ValidationResult | None = None
     conversion_result: ConversionResult | None = None
     job_id: str = ""
@@ -158,6 +158,7 @@ class TilesetUploader:
             # Clean up if using temp directory
             if not work_dir:
                 import shutil
+
                 shutil.rmtree(work_path, ignore_errors=True)
 
     def upload_from_file(
@@ -208,9 +209,7 @@ class TilesetUploader:
                 # Add validation warnings to result
                 for warning in validation.warnings:
                     if warning.severity in ("warning", "error"):
-                        result.warnings.append(
-                            f"[{warning.warning_type}] {warning.message}"
-                        )
+                        result.warnings.append(f"[{warning.warning_type}] {warning.message}")
 
             if dry_run:
                 result.success = True
@@ -273,7 +272,7 @@ class TilesetUploader:
 
     def _run_tilesets_command(
         self,
-        args: List[str],
+        args: list[str],
         check: bool = True,
     ) -> subprocess.CompletedProcess[str]:
         """Run a tilesets CLI command."""
@@ -301,7 +300,7 @@ class TilesetUploader:
         result = self._run_tilesets_command(["status", tileset_id], check=False)
         return result.returncode == 0
 
-    def _build_recipe(self, config: TilesetConfig) -> Dict[str, Any]:
+    def _build_recipe(self, config: TilesetConfig) -> dict[str, Any]:
         """Build tileset recipe."""
         if config.recipe:
             return config.recipe
@@ -320,7 +319,7 @@ class TilesetUploader:
     def _create_tileset(
         self,
         tileset_id: str,
-        recipe: Dict[str, Any],
+        recipe: dict[str, Any],
         config: TilesetConfig,
     ) -> None:
         """Create a new tileset."""
@@ -348,7 +347,7 @@ class TilesetUploader:
         finally:
             os.unlink(recipe_path)
 
-    def _update_recipe(self, tileset_id: str, recipe: Dict[str, Any]) -> None:
+    def _update_recipe(self, tileset_id: str, recipe: dict[str, Any]) -> None:
         """Update tileset recipe."""
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".json", delete=False, encoding="utf-8"
@@ -399,7 +398,7 @@ class TilesetUploader:
 
         return "timeout"
 
-    def list_sources(self) -> List[Dict[str, Any]]:
+    def list_sources(self) -> list[dict[str, Any]]:
         """List all tileset sources for the user."""
         result = self._run_tilesets_command(["list-sources", self.username])
         try:
@@ -407,7 +406,7 @@ class TilesetUploader:
         except json.JSONDecodeError:
             return []
 
-    def list_tilesets(self) -> List[Dict[str, Any]]:
+    def list_tilesets(self) -> list[dict[str, Any]]:
         """List all tilesets for the user."""
         result = self._run_tilesets_command(["list", self.username])
         try:
@@ -430,6 +429,6 @@ class TilesetUploader:
         return result.returncode == 0
 
     @staticmethod
-    def get_supported_formats() -> List[Dict[str, Any]]:
+    def get_supported_formats() -> list[dict[str, Any]]:
         """Get list of supported input formats."""
         return get_supported_formats()

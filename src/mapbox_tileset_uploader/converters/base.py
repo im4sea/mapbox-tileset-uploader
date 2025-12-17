@@ -5,14 +5,14 @@ Base converter interface for GIS format conversion.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Union
 
 
 @dataclass
 class ConversionResult:
     """Result of a format conversion operation."""
 
-    geojson: Dict[str, Any]
+    geojson: dict[str, Any]
     """The converted GeoJSON data."""
 
     source_format: str
@@ -21,10 +21,10 @@ class ConversionResult:
     feature_count: int
     """Number of features converted."""
 
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     """Non-fatal warnings encountered during conversion."""
 
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     """Additional metadata from the source file."""
 
     def __post_init__(self) -> None:
@@ -55,9 +55,9 @@ class BaseConverter(ABC):
 
     # Class-level format metadata
     format_name: str = "Unknown"
-    file_extensions: List[str] = []
-    mime_types: List[str] = []
-    requires_packages: List[str] = []
+    file_extensions: list[str] = []
+    mime_types: list[str] = []
+    requires_packages: list[str] = []
 
     def __init__(self) -> None:
         """Initialize the converter."""
@@ -101,7 +101,7 @@ class BaseConverter(ABC):
     @abstractmethod
     def convert(
         self,
-        source: Union[str, Path, Dict[str, Any]],
+        source: Union[str, Path, dict[str, Any]],
         **options: Any,
     ) -> ConversionResult:
         """
@@ -138,7 +138,7 @@ class BaseConverter(ABC):
         """
         pass
 
-    def validate_source(self, source: Union[str, Path, Dict[str, Any]]) -> None:
+    def validate_source(self, source: Union[str, Path, dict[str, Any]]) -> None:
         """
         Validate the source before conversion.
 
@@ -163,7 +163,7 @@ class BaseConverter(ABC):
             )
 
     @classmethod
-    def get_info(cls) -> Dict[str, Any]:
+    def get_info(cls) -> dict[str, Any]:
         """
         Get converter information.
 

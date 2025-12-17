@@ -1,6 +1,5 @@
 """Tests for the CLI module."""
 
-import pytest
 from click.testing import CliRunner
 
 from mapbox_tileset_uploader.cli import main
@@ -67,7 +66,17 @@ class TestCLI:
         runner = CliRunner()
         result = runner.invoke(
             main,
-            ["upload", "--url", "http://test", "--file", "test.geojson", "--id", "test", "--name", "Test"],
+            [
+                "upload",
+                "--url",
+                "http://test",
+                "--file",
+                "test.geojson",
+                "--id",
+                "test",
+                "--name",
+                "Test",
+            ],
         )
         # Click validates file path exists before checking mutual exclusivity
         assert result.exit_code != 0

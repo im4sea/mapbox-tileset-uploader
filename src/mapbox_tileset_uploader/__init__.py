@@ -12,18 +12,22 @@ Supports multiple formats:
 - GPX (.gpx)
 """
 
-from mapbox_tileset_uploader.uploader import TilesetUploader, TilesetConfig, UploadResult
+from mapbox_tileset_uploader.converters import (
+    BaseConverter,
+    ConversionResult,
+    get_converter,
+    get_supported_formats,
+)
+from mapbox_tileset_uploader.uploader import (
+    TilesetConfig,
+    TilesetUploader,
+    UploadResult,
+)
 from mapbox_tileset_uploader.validators import (
     GeometryValidator,
     ValidationResult,
     ValidationWarning,
     validate_geojson,
-)
-from mapbox_tileset_uploader.converters import (
-    get_converter,
-    get_supported_formats,
-    BaseConverter,
-    ConversionResult,
 )
 
 __version__ = "0.2.0"

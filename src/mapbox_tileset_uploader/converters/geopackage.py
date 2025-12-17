@@ -3,7 +3,7 @@ GeoPackage converter using fiona.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from mapbox_tileset_uploader.converters.base import BaseConverter, ConversionResult
 from mapbox_tileset_uploader.converters.registry import register_converter
@@ -20,7 +20,7 @@ class GeoPackageConverter(BaseConverter):
 
     def convert(
         self,
-        source: Union[str, Path, Dict[str, Any]],
+        source: Union[str, Path, dict[str, Any]],
         layer: str | None = None,
         **options: Any,
     ) -> ConversionResult:
@@ -49,9 +49,7 @@ class GeoPackageConverter(BaseConverter):
 
         if layer:
             if layer not in layers:
-                raise ValueError(
-                    f"Layer '{layer}' not found. Available: {', '.join(layers)}"
-                )
+                raise ValueError(f"Layer '{layer}' not found. Available: {', '.join(layers)}")
             selected_layer = layer
         else:
             selected_layer = layers[0]
@@ -62,7 +60,7 @@ class GeoPackageConverter(BaseConverter):
                 )
 
         features = []
-        metadata: Dict[str, Any] = {}
+        metadata: dict[str, Any] = {}
 
         with fiona.open(str(path), layer=selected_layer) as src:
             # Check CRS
@@ -70,8 +68,7 @@ class GeoPackageConverter(BaseConverter):
                 crs_str = str(src.crs)
                 if "4326" not in crs_str and "WGS" not in crs_str.upper():
                     warnings.append(
-                        f"CRS is {crs_str}, not WGS84. "
-                        "Data may need reprojection for web mapping."
+                        f"CRS is {crs_str}, not WGS84. Data may need reprojection for web mapping."
                     )
                 metadata["crs"] = crs_str
 
@@ -84,7 +81,7 @@ class GeoPackageConverter(BaseConverter):
                     warnings.append("Feature with null geometry skipped")
                     continue
 
-                feat: Dict[str, Any] = {
+                feat: dict[str, Any] = {
                     "type": "Feature",
                     "geometry": geom,
                     "properties": props,

@@ -4,7 +4,7 @@ GPX (GPS Exchange Format) converter.
 
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from mapbox_tileset_uploader.converters.base import BaseConverter, ConversionResult
 from mapbox_tileset_uploader.converters.registry import register_converter
@@ -21,7 +21,7 @@ class GPXConverter(BaseConverter):
 
     def convert(
         self,
-        source: Union[str, Path, Dict[str, Any]],
+        source: Union[str, Path, dict[str, Any]],
         include_tracks: bool = True,
         include_routes: bool = True,
         include_waypoints: bool = True,
@@ -46,14 +46,14 @@ class GPXConverter(BaseConverter):
         self.validate_source(source)
 
         path = Path(source)
-        features: List[Dict[str, Any]] = []
-        metadata: Dict[str, Any] = {
+        features: list[dict[str, Any]] = []
+        metadata: dict[str, Any] = {
             "tracks": 0,
             "routes": 0,
             "waypoints": 0,
         }
 
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             try:
                 gpx = gpxpy.parse(f)
             except Exception as e:
@@ -62,7 +62,7 @@ class GPXConverter(BaseConverter):
         # Process waypoints
         if include_waypoints:
             for wpt in gpx.waypoints:
-                props: Dict[str, Any] = {
+                props: dict[str, Any] = {
                     "type": "waypoint",
                     "name": wpt.name,
                     "description": wpt.description,
@@ -72,14 +72,16 @@ class GPXConverter(BaseConverter):
                 # Remove None values
                 props = {k: v for k, v in props.items() if v is not None}
 
-                features.append({
-                    "type": "Feature",
-                    "geometry": {
-                        "type": "Point",
-                        "coordinates": self._point_coords(wpt),
-                    },
-                    "properties": props,
-                })
+                features.append(
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": self._point_coords(wpt),
+                        },
+                        "properties": props,
+                    }
+                )
                 metadata["waypoints"] += 1
 
         # Process routes
@@ -97,14 +99,16 @@ class GPXConverter(BaseConverter):
                 }
                 props = {k: v for k, v in props.items() if v is not None}
 
-                features.append({
-                    "type": "Feature",
-                    "geometry": {
-                        "type": "LineString",
-                        "coordinates": coords,
-                    },
-                    "properties": props,
-                })
+                features.append(
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "LineString",
+                            "coordinates": coords,
+                        },
+                        "properties": props,
+                    }
+                )
                 metadata["routes"] += 1
 
         # Process tracks
@@ -112,9 +116,7 @@ class GPXConverter(BaseConverter):
             for track in gpx.tracks:
                 for i, segment in enumerate(track.segments):
                     if not segment.points:
-                        warnings.append(
-                            f"Empty track segment in '{track.name}' skipped"
-                        )
+                        warnings.append(f"Empty track segment in '{track.name}' skipped")
                         continue
 
                     coords = [self._point_coords(pt) for pt in segment.points]
@@ -132,18 +134,18 @@ class GPXConverter(BaseConverter):
                         if len(times) >= 2:
                             props["start_time"] = times[0].isoformat()
                             props["end_time"] = times[-1].isoformat()
-                            props["duration_seconds"] = (
-                                times[-1] - times[0]
-                            ).total_seconds()
+                            props["duration_seconds"] = (times[-1] - times[0]).total_seconds()
 
-                    features.append({
-                        "type": "Feature",
-                        "geometry": {
-                            "type": "LineString",
-                            "coordinates": coords,
-                        },
-                        "properties": props,
-                    })
+                    features.append(
+                        {
+                            "type": "Feature",
+                            "geometry": {
+                                "type": "LineString",
+                                "coordinates": coords,
+                            },
+                            "properties": props,
+                        }
+                    )
                     metadata["tracks"] += 1
 
         if not features:
@@ -159,7 +161,7 @@ class GPXConverter(BaseConverter):
             metadata=metadata,
         )
 
-    def _point_coords(self, point: Any) -> List[float]:
+    def _point_coords(self, point: Any) -> list[float]:
         """Extract coordinates from GPX point."""
         if point.elevation is not None:
             return [point.longitude, point.latitude, point.elevation]
@@ -171,9 +173,7 @@ class GPXConverter(BaseConverter):
         **options: Any,
     ) -> ConversionResult:
         """Convert GPX from bytes."""
-        with tempfile.NamedTemporaryFile(
-            suffix=".gpx", delete=False, mode="wb"
-        ) as f:
+        with tempfile.NamedTemporaryFile(suffix=".gpx", delete=False, mode="wb") as f:
             f.write(data)
             temp_path = Path(f.name)
 

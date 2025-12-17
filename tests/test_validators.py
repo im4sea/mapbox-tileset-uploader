@@ -1,7 +1,5 @@
 """Tests for the validators module."""
 
-import pytest
-
 from mapbox_tileset_uploader.validators import (
     GeometryValidator,
     ValidationResult,

@@ -4,7 +4,6 @@ Command-line interface for Mapbox Tileset Uploader.
 
 import json
 import sys
-from pathlib import Path
 from typing import Optional
 
 import click
@@ -29,8 +28,10 @@ class CustomGroup(click.Group):
         # Add examples section
         formatter.write_paragraph()
         with formatter.section("Examples"):
-            formatter.write_text("mtu upload -f data.geojson -i my-tileset -n \"My Tileset\"")
-            formatter.write_text("mtu upload -u https://example.com/data.shp.zip -i boundaries -n \"Boundaries\"")
+            formatter.write_text('mtu upload -f data.geojson -i my-tileset -n "My Tileset"')
+            formatter.write_text(
+                'mtu upload -u https://example.com/data.shp.zip -i boundaries -n "Boundaries"'
+            )
             formatter.write_text("mtu convert input.topojson output.geojson --pretty")
             formatter.write_text("mtu formats")
             formatter.write_text("mtu validate data.geojson")
@@ -143,8 +144,10 @@ def validate(
         # Validate geometry
         validation = validate_geojson(result.geojson)
 
-        click.echo(f"\n📊 Geometry Validation:")
-        click.echo(f"   Valid features: {validation.valid_feature_count}/{validation.feature_count}")
+        click.echo("\n📊 Geometry Validation:")
+        valid_count = validation.valid_feature_count
+        total_count = validation.feature_count
+        click.echo(f"   Valid features: {valid_count}/{total_count}")
         click.echo(f"   Warnings: {validation.warning_count}")
         click.echo(f"   Errors: {validation.error_count}")
 
@@ -159,12 +162,15 @@ def validate(
                 by_type[w.warning_type].append(w)
 
             if by_type:
-                click.echo(f"\n⚠️  Issues found:")
+                click.echo("\n⚠️  Issues found:")
                 for wtype, warnings in sorted(by_type.items()):
                     click.echo(f"\n   [{wtype}] ({len(warnings)} occurrences)")
                     # Show first 3 examples
                     for w in warnings[:3]:
-                        loc = f"feature {w.feature_index}" if w.feature_index is not None else "global"
+                        if w.feature_index is not None:
+                            loc = f"feature {w.feature_index}"
+                        else:
+                            loc = "global"
                         click.echo(f"     • {loc}: {w.message}")
                     if len(warnings) > 3:
                         click.echo(f"     ... and {len(warnings) - 3} more")
@@ -183,7 +189,9 @@ def validate(
 @main.command()
 @click.option("--url", "-u", help="URL to download GIS data from")
 @click.option("--file", "-f", "file_path", type=click.Path(exists=True), help="Local file path")
-@click.option("--id", "-i", "tileset_id", required=True, help="Tileset ID (without username prefix)")
+@click.option(
+    "--id", "-i", "tileset_id", required=True, help="Tileset ID (without username prefix)"
+)
 @click.option("--name", "-n", "tileset_name", required=True, help="Human-readable tileset name")
 @click.option("--format", "format_hint", help="Force a specific input format")
 @click.option("--source-id", "-s", help="Source ID (defaults to tileset ID)")
@@ -221,7 +229,7 @@ def upload(
     Upload GIS data to Mapbox as a vector tileset.
 
     Provide either --url to download from a remote source, or --file for a local file.
-    Supports multiple formats: GeoJSON, TopoJSON, Shapefile, GeoPackage, KML, FlatGeobuf, GeoParquet, GPX.
+    Supports GeoJSON, TopoJSON, Shapefile, GeoPackage, KML, FlatGeobuf, GeoParquet, GPX.
 
     \b
     Examples:
@@ -249,7 +257,7 @@ def upload(
     # Load custom recipe if provided
     custom_recipe = {}
     if recipe:
-        with open(recipe, "r", encoding="utf-8") as f:
+        with open(recipe, encoding="utf-8") as f:
             custom_recipe = json.load(f)
 
     # Build configuration
@@ -290,7 +298,10 @@ def upload(
         else:
             click.echo(f"   Source: {file_path}")
             result = uploader.upload_from_file(
-                file_path, config, format_hint=format_hint, dry_run=dry_run  # type: ignore
+                file_path,
+                config,
+                format_hint=format_hint,
+                dry_run=dry_run,  # type: ignore
             )
 
         # Show conversion info
@@ -361,7 +372,7 @@ def convert(
 
         # Show warnings
         if result.warnings:
-            click.echo(f"\n⚠️  Warnings:")
+            click.echo("\n⚠️  Warnings:")
             for warning in result.warnings:
                 click.echo(f"   - {warning}")
 
@@ -437,7 +448,9 @@ def list_tilesets(token: Optional[str], username: Optional[str]) -> None:
                 name = tileset.get("name", "Unnamed")
                 tileset_id = tileset.get("id", "")
                 status = tileset.get("status", "")
-                status_icon = "✅" if status == "success" else "⏳" if status == "processing" else "❓"
+                status_icon = (
+                    "✅" if status == "success" else "⏳" if status == "processing" else "❓"
+                )
                 click.echo(f"   {status_icon} {name}")
                 click.echo(f"      ID: {tileset_id}")
             else:

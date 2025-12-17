@@ -5,7 +5,7 @@ KML/KMZ converter using fiona or fastkml.
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Union
 
 from mapbox_tileset_uploader.converters.base import BaseConverter, ConversionResult
 from mapbox_tileset_uploader.converters.registry import register_converter
@@ -25,7 +25,7 @@ class KMLConverter(BaseConverter):
 
     def convert(
         self,
-        source: Union[str, Path, Dict[str, Any]],
+        source: Union[str, Path, dict[str, Any]],
         **options: Any,
     ) -> ConversionResult:
         """
@@ -68,11 +68,9 @@ class KMLConverter(BaseConverter):
                     if "description" in props and props["description"]:
                         desc = props["description"]
                         if "<" in str(desc) and ">" in str(desc):
-                            warnings.append(
-                                "Description contains HTML markup - may need cleaning"
-                            )
+                            warnings.append("Description contains HTML markup - may need cleaning")
 
-                    feat: Dict[str, Any] = {
+                    feat: dict[str, Any] = {
                         "type": "Feature",
                         "geometry": geom,
                         "properties": props,

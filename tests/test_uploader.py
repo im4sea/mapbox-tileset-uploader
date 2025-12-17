@@ -1,8 +1,9 @@
 """Tests for the uploader module."""
 
 import os
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from mapbox_tileset_uploader.uploader import TilesetConfig, TilesetUploader, UploadResult
 

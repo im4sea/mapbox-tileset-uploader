@@ -4,7 +4,7 @@ TopoJSON to GeoJSON converter.
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from mapbox_tileset_uploader.converters.base import BaseConverter, ConversionResult
 from mapbox_tileset_uploader.converters.registry import register_converter
@@ -21,7 +21,7 @@ class TopoJSONConverter(BaseConverter):
 
     def convert(
         self,
-        source: Union[str, Path, Dict[str, Any]],
+        source: Union[str, Path, dict[str, Any]],
         object_name: str | None = None,
         **options: Any,
     ) -> ConversionResult:
@@ -42,7 +42,7 @@ class TopoJSONConverter(BaseConverter):
             topojson = source
         else:
             self.validate_source(source)
-            with open(source, "r", encoding="utf-8") as f:
+            with open(source, encoding="utf-8") as f:
                 topojson = json.load(f)
 
         if topojson.get("type") != "Topology":
@@ -73,7 +73,7 @@ class TopoJSONConverter(BaseConverter):
         geometries = obj.get("geometries", [obj])
 
         for geometry in geometries:
-            feature: Dict[str, Any] = {
+            feature: dict[str, Any] = {
                 "type": "Feature",
                 "properties": geometry.get("properties", {}),
                 "geometry": self._decode_geometry(geometry, arcs, transform),
@@ -103,10 +103,10 @@ class TopoJSONConverter(BaseConverter):
 
     def _decode_geometry(
         self,
-        geometry: Dict[str, Any],
-        arcs: List[List[List[int]]],
-        transform: Dict[str, Any] | None,
-    ) -> Dict[str, Any] | None:
+        geometry: dict[str, Any],
+        arcs: list[list[list[int]]],
+        transform: dict[str, Any] | None,
+    ) -> dict[str, Any] | None:
         """Decode a TopoJSON geometry to GeoJSON geometry."""
         geom_type = geometry.get("type")
 
@@ -159,21 +159,19 @@ class TopoJSONConverter(BaseConverter):
             geometries = geometry.get("geometries", [])
             return {
                 "type": "GeometryCollection",
-                "geometries": [
-                    self._decode_geometry(g, arcs, transform) for g in geometries
-                ],
+                "geometries": [self._decode_geometry(g, arcs, transform) for g in geometries],
             }
 
         raise ValueError(f"Unknown geometry type: {geom_type}")
 
     def _decode_arcs(
         self,
-        arc_indices: List[int],
-        arcs: List[List[List[int]]],
-        transform: Dict[str, Any] | None,
-    ) -> List[List[float]]:
+        arc_indices: list[int],
+        arcs: list[list[list[int]]],
+        transform: dict[str, Any] | None,
+    ) -> list[list[float]]:
         """Decode arc indices to coordinates."""
-        coordinates: List[List[float]] = []
+        coordinates: list[list[float]] = []
 
         for arc_index in arc_indices:
             if arc_index < 0:
@@ -189,11 +187,11 @@ class TopoJSONConverter(BaseConverter):
 
     def _decode_arc(
         self,
-        arc: List[List[int]],
-        transform: Dict[str, Any] | None,
-    ) -> List[List[float]]:
+        arc: list[list[int]],
+        transform: dict[str, Any] | None,
+    ) -> list[list[float]]:
         """Decode a single arc with delta encoding and optional transform."""
-        coordinates: List[List[float]] = []
+        coordinates: list[list[float]] = []
         x, y = 0, 0
 
         for point in arc:
@@ -205,9 +203,9 @@ class TopoJSONConverter(BaseConverter):
 
     def _transform_point(
         self,
-        point: List[Union[int, float]],
-        transform: Dict[str, Any] | None,
-    ) -> List[float]:
+        point: list[Union[int, float]],
+        transform: dict[str, Any] | None,
+    ) -> list[float]:
         """Apply transform to a point."""
         if transform is None:
             return [float(point[0]), float(point[1])]

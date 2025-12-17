@@ -2,11 +2,10 @@
 Shapefile converter using pyshp or fiona.
 """
 
-import json
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from mapbox_tileset_uploader.converters.base import BaseConverter, ConversionResult
 from mapbox_tileset_uploader.converters.registry import register_converter
@@ -23,7 +22,7 @@ class ShapefileConverter(BaseConverter):
 
     def convert(
         self,
-        source: Union[str, Path, Dict[str, Any]],
+        source: Union[str, Path, dict[str, Any]],
         encoding: str = "utf-8",
         **options: Any,
     ) -> ConversionResult:
@@ -67,14 +66,16 @@ class ShapefileConverter(BaseConverter):
 
                     # Check for null geometry
                     if geom.get("type") is None:
-                        warnings.append(f"Feature with null geometry skipped")
+                        warnings.append("Feature with null geometry skipped")
                         continue
 
-                    features.append({
-                        "type": "Feature",
-                        "geometry": geom,
-                        "properties": props,
-                    })
+                    features.append(
+                        {
+                            "type": "Feature",
+                            "geometry": geom,
+                            "properties": props,
+                        }
+                    )
 
         except shapefile.ShapefileException as e:
             raise ValueError(f"Invalid shapefile: {e}")
@@ -95,7 +96,6 @@ class ShapefileConverter(BaseConverter):
         **options: Any,
     ) -> ConversionResult:
         """Extract and convert shapefile from ZIP."""
-        import shapefile
 
         with tempfile.TemporaryDirectory() as tmpdir:
             with zipfile.ZipFile(zip_path, "r") as zf:
@@ -142,7 +142,7 @@ class ShapefileConverter(BaseConverter):
                 with zipfile.ZipFile(path, "r") as zf:
                     names = zf.namelist()
                     return any(n.lower().endswith(".shp") for n in names)
-            except (zipfile.BadZipFile, IOError):
+            except (OSError, zipfile.BadZipFile):
                 return False
 
         return False

@@ -4,7 +4,7 @@ GeoJSON converter (native format - passthrough with validation).
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Union
 
 from mapbox_tileset_uploader.converters.base import BaseConverter, ConversionResult
 from mapbox_tileset_uploader.converters.registry import register_converter
@@ -21,7 +21,7 @@ class GeoJSONConverter(BaseConverter):
 
     def convert(
         self,
-        source: Union[str, Path, Dict[str, Any]],
+        source: Union[str, Path, dict[str, Any]],
         **options: Any,
     ) -> ConversionResult:
         """
@@ -40,7 +40,7 @@ class GeoJSONConverter(BaseConverter):
             geojson = source
         else:
             self.validate_source(source)
-            with open(source, "r", encoding="utf-8") as f:
+            with open(source, encoding="utf-8") as f:
                 geojson = json.load(f)
 
         # Normalize to FeatureCollection
@@ -67,8 +67,8 @@ class GeoJSONConverter(BaseConverter):
 
     def _normalize_geojson(
         self,
-        geojson: Dict[str, Any],
-    ) -> tuple[Dict[str, Any], list[str]]:
+        geojson: dict[str, Any],
+    ) -> tuple[dict[str, Any], list[str]]:
         """
         Normalize GeoJSON to FeatureCollection.
 
@@ -107,9 +107,7 @@ class GeoJSONConverter(BaseConverter):
             warnings.append(f"Wrapped {geojson_type} geometry in FeatureCollection")
             return {
                 "type": "FeatureCollection",
-                "features": [
-                    {"type": "Feature", "geometry": geojson, "properties": {}}
-                ],
+                "features": [{"type": "Feature", "geometry": geojson, "properties": {}}],
             }, warnings
 
         raise ValueError(f"Invalid GeoJSON type: {geojson_type}")

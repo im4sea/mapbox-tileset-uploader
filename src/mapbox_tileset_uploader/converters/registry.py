@@ -3,7 +3,7 @@ Converter registry for auto-detecting and loading format converters.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Optional, Union
 
 from mapbox_tileset_uploader.converters.base import BaseConverter
 
@@ -15,11 +15,11 @@ class ConverterRegistry:
     Provides auto-detection of file formats and lazy loading of converters.
     """
 
-    _converters: Dict[str, Type[BaseConverter]] = {}
-    _extension_map: Dict[str, str] = {}
+    _converters: dict[str, type[BaseConverter]] = {}
+    _extension_map: dict[str, str] = {}
 
     @classmethod
-    def register(cls, converter_class: Type[BaseConverter]) -> Type[BaseConverter]:
+    def register(cls, converter_class: type[BaseConverter]) -> type[BaseConverter]:
         """
         Register a converter class.
 
@@ -65,8 +65,7 @@ class ConverterRegistry:
             name = format_name.lower()
             if name not in cls._converters:
                 raise ValueError(
-                    f"Unknown format: {format_name}. "
-                    f"Supported: {', '.join(cls._converters.keys())}"
+                    f"Unknown format: {format_name}. Supported: {', '.join(cls._converters.keys())}"
                 )
             return cls._converters[name]()
 
@@ -90,7 +89,7 @@ class ConverterRegistry:
         raise ValueError("Either format_name or file_path must be provided")
 
     @classmethod
-    def get_supported_formats(cls) -> List[Dict[str, Any]]:
+    def get_supported_formats(cls) -> list[dict[str, Any]]:
         """
         Get information about all registered converters.
 
@@ -105,7 +104,7 @@ class ConverterRegistry:
         return result
 
     @classmethod
-    def _is_available(cls, converter_class: Type[BaseConverter]) -> bool:
+    def _is_available(cls, converter_class: type[BaseConverter]) -> bool:
         """Check if a converter's dependencies are installed."""
         for package in converter_class.requires_packages:
             try:
@@ -141,12 +140,12 @@ def get_converter(
     return ConverterRegistry.get_converter(format_name, file_path)
 
 
-def get_supported_formats() -> List[Dict[str, Any]]:
+def get_supported_formats() -> list[dict[str, Any]]:
     """Get supported formats. See ConverterRegistry.get_supported_formats."""
     return ConverterRegistry.get_supported_formats()
 
 
-def register_converter(converter_class: Type[BaseConverter]) -> Type[BaseConverter]:
+def register_converter(converter_class: type[BaseConverter]) -> type[BaseConverter]:
     """Register a converter. See ConverterRegistry.register."""
     return ConverterRegistry.register(converter_class)
 
@@ -154,8 +153,10 @@ def register_converter(converter_class: Type[BaseConverter]) -> Type[BaseConvert
 def _register_builtin_converters() -> None:
     """Register all built-in converters."""
     # Import converters to trigger registration
-    from mapbox_tileset_uploader.converters import geojson  # noqa: F401
-    from mapbox_tileset_uploader.converters import topojson  # noqa: F401
+    from mapbox_tileset_uploader.converters import (
+        geojson,  # noqa: F401
+        topojson,  # noqa: F401
+    )
 
     # Optional converters - only register if dependencies available
     try:

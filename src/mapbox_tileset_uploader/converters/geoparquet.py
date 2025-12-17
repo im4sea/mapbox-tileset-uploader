@@ -5,7 +5,7 @@ GeoParquet converter using geopandas.
 import json
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Union
 
 from mapbox_tileset_uploader.converters.base import BaseConverter, ConversionResult
 from mapbox_tileset_uploader.converters.registry import register_converter
@@ -22,7 +22,7 @@ class GeoParquetConverter(BaseConverter):
 
     def convert(
         self,
-        source: Union[str, Path, Dict[str, Any]],
+        source: Union[str, Path, dict[str, Any]],
         **options: Any,
     ) -> ConversionResult:
         """
@@ -41,7 +41,7 @@ class GeoParquetConverter(BaseConverter):
         self.validate_source(source)
 
         path = Path(source)
-        metadata: Dict[str, Any] = {}
+        metadata: dict[str, Any] = {}
 
         try:
             gdf = gpd.read_parquet(str(path))

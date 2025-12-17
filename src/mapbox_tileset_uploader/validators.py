@@ -5,7 +5,7 @@ Provides warnings for geometry issues without modifying the data.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 
 @dataclass
@@ -27,7 +27,7 @@ class ValidationWarning:
     severity: str = "warning"
     """Severity level: 'info', 'warning', 'error'."""
 
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
     """Additional details about the issue."""
 
 
@@ -38,7 +38,7 @@ class ValidationResult:
     valid: bool
     """Whether the data passed validation (no errors, warnings OK)."""
 
-    warnings: List[ValidationWarning] = field(default_factory=list)
+    warnings: list[ValidationWarning] = field(default_factory=list)
     """List of validation warnings."""
 
     feature_count: int = 0
@@ -57,7 +57,7 @@ class ValidationResult:
         """Number of errors."""
         return len([w for w in self.warnings if w.severity == "error"])
 
-    def get_warnings_by_type(self, warning_type: str) -> List[ValidationWarning]:
+    def get_warnings_by_type(self, warning_type: str) -> list[ValidationWarning]:
         """Get all warnings of a specific type."""
         return [w for w in self.warnings if w.warning_type == warning_type]
 
@@ -73,7 +73,7 @@ class ValidationResult:
         if self.warnings:
             lines.append("\nIssues found:")
             # Group by type
-            types: Dict[str, int] = {}
+            types: dict[str, int] = {}
             for w in self.warnings:
                 types[w.warning_type] = types.get(w.warning_type, 0) + 1
 
@@ -134,7 +134,7 @@ class GeometryValidator:
             except ImportError:
                 pass
 
-    def validate(self, geojson: Dict[str, Any]) -> ValidationResult:
+    def validate(self, geojson: dict[str, Any]) -> ValidationResult:
         """
         Validate a GeoJSON object.
 
@@ -144,7 +144,7 @@ class GeometryValidator:
         Returns:
             ValidationResult with warnings and statistics.
         """
-        warnings: List[ValidationWarning] = []
+        warnings: list[ValidationWarning] = []
         valid_count = 0
         total_count = 0
 
@@ -154,12 +154,13 @@ class GeometryValidator:
             features = geojson.get("features", [])
             for i, feature in enumerate(features):
                 if len(warnings) >= self.max_warnings:
+                    msg = f"Maximum warnings ({self.max_warnings}) reached"
                     warnings.append(
                         ValidationWarning(
                             feature_index=None,
                             feature_id=None,
                             warning_type="max_warnings_reached",
-                            message=f"Maximum warnings ({self.max_warnings}) reached, stopping validation",
+                            message=msg + ", stopping validation",
                             severity="info",
                         )
                     )
@@ -214,11 +215,11 @@ class GeometryValidator:
 
     def _validate_feature(
         self,
-        feature: Dict[str, Any],
+        feature: dict[str, Any],
         index: int,
-    ) -> List[ValidationWarning]:
+    ) -> list[ValidationWarning]:
         """Validate a single feature."""
-        warnings: List[ValidationWarning] = []
+        warnings: list[ValidationWarning] = []
         feature_id = feature.get("id")
 
         # Check feature structure
@@ -266,12 +267,12 @@ class GeometryValidator:
 
     def _validate_geometry(
         self,
-        geometry: Dict[str, Any],
+        geometry: dict[str, Any],
         feature_index: int,
         feature_id: Optional[Any],
-    ) -> List[ValidationWarning]:
+    ) -> list[ValidationWarning]:
         """Validate a geometry."""
-        warnings: List[ValidationWarning] = []
+        warnings: list[ValidationWarning] = []
         geom_type = geometry.get("type")
 
         if geom_type == "Point":
@@ -284,15 +285,11 @@ class GeometryValidator:
 
         elif geom_type == "LineString":
             coords = geometry.get("coordinates", [])
-            warnings.extend(
-                self._validate_line_string(coords, feature_index, feature_id)
-            )
+            warnings.extend(self._validate_line_string(coords, feature_index, feature_id))
 
         elif geom_type == "MultiLineString":
             for line in geometry.get("coordinates", []):
-                warnings.extend(
-                    self._validate_line_string(line, feature_index, feature_id)
-                )
+                warnings.extend(self._validate_line_string(line, feature_index, feature_id))
 
         elif geom_type == "Polygon":
             rings = geometry.get("coordinates", [])
@@ -300,15 +297,11 @@ class GeometryValidator:
 
         elif geom_type == "MultiPolygon":
             for polygon in geometry.get("coordinates", []):
-                warnings.extend(
-                    self._validate_polygon(polygon, feature_index, feature_id)
-                )
+                warnings.extend(self._validate_polygon(polygon, feature_index, feature_id))
 
         elif geom_type == "GeometryCollection":
             for geom in geometry.get("geometries", []):
-                warnings.extend(
-                    self._validate_geometry(geom, feature_index, feature_id)
-                )
+                warnings.extend(self._validate_geometry(geom, feature_index, feature_id))
 
         elif geom_type is None:
             warnings.append(
@@ -334,21 +327,19 @@ class GeometryValidator:
 
         # Check validity using shapely if available
         if self.check_validity and self._has_shapely:
-            validity_warnings = self._check_shapely_validity(
-                geometry, feature_index, feature_id
-            )
+            validity_warnings = self._check_shapely_validity(geometry, feature_index, feature_id)
             warnings.extend(validity_warnings)
 
         return warnings
 
     def _validate_coordinate(
         self,
-        coord: List[float],
+        coord: list[float],
         feature_index: int,
         feature_id: Optional[Any],
-    ) -> List[ValidationWarning]:
+    ) -> list[ValidationWarning]:
         """Validate a single coordinate."""
-        warnings: List[ValidationWarning] = []
+        warnings: list[ValidationWarning] = []
 
         if not self.check_coordinates:
             return warnings
@@ -368,24 +359,26 @@ class GeometryValidator:
         lon, lat = coord[0], coord[1]
 
         if not (self.LON_MIN <= lon <= self.LON_MAX):
+            msg = f"Longitude {lon} is out of range [{self.LON_MIN}, {self.LON_MAX}]"
             warnings.append(
                 ValidationWarning(
                     feature_index=feature_index,
                     feature_id=feature_id,
                     warning_type="out_of_bounds",
-                    message=f"Longitude {lon} is out of valid range [{self.LON_MIN}, {self.LON_MAX}]",
+                    message=msg,
                     severity="warning",
                     details={"coordinate": coord},
                 )
             )
 
         if not (self.LAT_MIN <= lat <= self.LAT_MAX):
+            msg = f"Latitude {lat} is out of range [{self.LAT_MIN}, {self.LAT_MAX}]"
             warnings.append(
                 ValidationWarning(
                     feature_index=feature_index,
                     feature_id=feature_id,
                     warning_type="out_of_bounds",
-                    message=f"Latitude {lat} is out of valid range [{self.LAT_MIN}, {self.LAT_MAX}]",
+                    message=msg,
                     severity="warning",
                     details={"coordinate": coord},
                 )
@@ -395,12 +388,12 @@ class GeometryValidator:
 
     def _validate_line_string(
         self,
-        coords: List[List[float]],
+        coords: list[list[float]],
         feature_index: int,
         feature_id: Optional[Any],
-    ) -> List[ValidationWarning]:
+    ) -> list[ValidationWarning]:
         """Validate a LineString."""
-        warnings: List[ValidationWarning] = []
+        warnings: list[ValidationWarning] = []
 
         if len(coords) < 2:
             warnings.append(
@@ -437,12 +430,12 @@ class GeometryValidator:
 
     def _validate_polygon(
         self,
-        rings: List[List[List[float]]],
+        rings: list[list[list[float]]],
         feature_index: int,
         feature_id: Optional[Any],
-    ) -> List[ValidationWarning]:
+    ) -> list[ValidationWarning]:
         """Validate a Polygon."""
-        warnings: List[ValidationWarning] = []
+        warnings: list[ValidationWarning] = []
 
         if not rings:
             warnings.append(
@@ -461,12 +454,13 @@ class GeometryValidator:
 
             # Check minimum points
             if len(ring) < 4:
+                msg = f"Polygon {ring_type} ring has {len(ring)} points, needs 4"
                 warnings.append(
                     ValidationWarning(
                         feature_index=feature_index,
                         feature_id=feature_id,
                         warning_type="insufficient_coordinates",
-                        message=f"Polygon {ring_type} ring has {len(ring)} points, needs at least 4",
+                        message=msg,
                         severity="error",
                     )
                 )
@@ -491,9 +485,7 @@ class GeometryValidator:
 
             # Check coordinates
             for coord in ring:
-                warnings.extend(
-                    self._validate_coordinate(coord, feature_index, feature_id)
-                )
+                warnings.extend(self._validate_coordinate(coord, feature_index, feature_id))
 
             # Check duplicates
             if self.check_duplicates:
@@ -502,12 +494,14 @@ class GeometryValidator:
                 if ring[0] == ring[-1] and len(ring) - 1 in duplicates:
                     duplicates.remove(len(ring) - 1)
                 if duplicates:
+                    dupe_count = len(duplicates)
+                    msg = f"Polygon {ring_type} ring has {dupe_count} duplicate vertices"
                     warnings.append(
                         ValidationWarning(
                             feature_index=feature_index,
                             feature_id=feature_id,
                             warning_type="duplicate_vertices",
-                            message=f"Polygon {ring_type} ring has {len(duplicates)} duplicate vertices",
+                            message=msg,
                             severity="info",
                         )
                     )
@@ -540,8 +534,8 @@ class GeometryValidator:
 
     def _find_consecutive_duplicates(
         self,
-        coords: List[List[float]],
-    ) -> List[int]:
+        coords: list[list[float]],
+    ) -> list[int]:
         """Find indices of consecutive duplicate vertices."""
         duplicates = []
         for i in range(1, len(coords)):
@@ -549,7 +543,7 @@ class GeometryValidator:
                 duplicates.append(i)
         return duplicates
 
-    def _is_counterclockwise(self, ring: List[List[float]]) -> bool:
+    def _is_counterclockwise(self, ring: list[list[float]]) -> bool:
         """Check if a ring is counter-clockwise using the shoelace formula."""
         total = 0.0
         n = len(ring)
@@ -561,12 +555,12 @@ class GeometryValidator:
 
     def _check_shapely_validity(
         self,
-        geometry: Dict[str, Any],
+        geometry: dict[str, Any],
         feature_index: int,
         feature_id: Optional[Any],
-    ) -> List[ValidationWarning]:
+    ) -> list[ValidationWarning]:
         """Check geometry validity using shapely."""
-        warnings: List[ValidationWarning] = []
+        warnings: list[ValidationWarning] = []
 
         try:
             from shapely.geometry import shape
@@ -613,7 +607,7 @@ class GeometryValidator:
 
 
 def validate_geojson(
-    geojson: Dict[str, Any],
+    geojson: dict[str, Any],
     **options: Any,
 ) -> ValidationResult:
     """

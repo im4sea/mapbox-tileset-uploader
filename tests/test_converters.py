@@ -1,14 +1,15 @@
 """Tests for the converters module."""
 
 import json
-import pytest
 import tempfile
 from pathlib import Path
 
+import pytest
+
 from mapbox_tileset_uploader.converters import get_converter, get_supported_formats
+from mapbox_tileset_uploader.converters.base import ConversionResult
 from mapbox_tileset_uploader.converters.geojson import GeoJSONConverter
 from mapbox_tileset_uploader.converters.topojson import TopoJSONConverter
-from mapbox_tileset_uploader.converters.base import ConversionResult
 
 
 class TestConverterRegistry:
@@ -118,9 +119,7 @@ class TestGeoJSONConverter:
             ],
         }
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".geojson", mode="w", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(suffix=".geojson", mode="w", delete=False) as f:
             json.dump(geojson, f)
             temp_path = Path(f.name)
 
@@ -308,7 +307,9 @@ class TestGeometryTypes:
             "objects": {
                 "test": {
                     "type": "GeometryCollection",
-                    "geometries": [{"type": "MultiLineString", "arcs": [[0], [1]], "properties": {}}],
+                    "geometries": [
+                        {"type": "MultiLineString", "arcs": [[0], [1]], "properties": {}}
+                    ],
                 }
             },
             "arcs": [[[0, 0], [1, 0]], [[2, 0], [3, 0]]],
@@ -325,9 +326,7 @@ class TestGeometryTypes:
             "objects": {
                 "test": {
                     "type": "GeometryCollection",
-                    "geometries": [
-                        {"type": "Point", "coordinates": [10, 20], "properties": {}}
-                    ],
+                    "geometries": [{"type": "Point", "coordinates": [10, 20], "properties": {}}],
                 }
             },
             "arcs": [],

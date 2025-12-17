@@ -13,9 +13,9 @@ from typing import Any
 
 import requests
 
-from mapbox_tileset_uploader.converters import get_converter, get_supported_formats
-from mapbox_tileset_uploader.converters.base import ConversionResult
-from mapbox_tileset_uploader.validators import GeometryValidator, ValidationResult
+from mtu.converters import get_converter, get_supported_formats
+from mtu.converters.base import ConversionResult
+from mtu.validators import GeometryValidator, ValidationResult
 
 
 @dataclass

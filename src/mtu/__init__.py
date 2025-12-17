@@ -12,18 +12,18 @@ Supports multiple formats:
 - GPX (.gpx)
 """
 
-from mapbox_tileset_uploader.converters import (
+from mtu.converters import (
     BaseConverter,
     ConversionResult,
     get_converter,
     get_supported_formats,
 )
-from mapbox_tileset_uploader.uploader import (
+from mtu.uploader import (
     TilesetConfig,
     TilesetUploader,
     UploadResult,
 )
-from mapbox_tileset_uploader.validators import (
+from mtu.validators import (
     GeometryValidator,
     ValidationResult,
     ValidationWarning,

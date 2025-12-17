@@ -7,10 +7,10 @@ import sys
 
 import click
 
-from mapbox_tileset_uploader import __version__
-from mapbox_tileset_uploader.converters import get_converter, get_supported_formats
-from mapbox_tileset_uploader.uploader import TilesetConfig, TilesetUploader
-from mapbox_tileset_uploader.validators import validate_geojson
+from mtu import __version__
+from mtu.converters import get_converter, get_supported_formats
+from mtu.uploader import TilesetConfig, TilesetUploader
+from mtu.validators import validate_geojson
 
 
 # Custom help class for better formatting

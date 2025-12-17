@@ -1,6 +1,6 @@
 """Tests for the validators module."""
 
-from mapbox_tileset_uploader.validators import (
+from mtu.validators import (
     GeometryValidator,
     ValidationResult,
     ValidationWarning,

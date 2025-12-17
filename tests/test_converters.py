@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from mapbox_tileset_uploader.converters import get_converter, get_supported_formats
-from mapbox_tileset_uploader.converters.base import ConversionResult
-from mapbox_tileset_uploader.converters.geojson import GeoJSONConverter
-from mapbox_tileset_uploader.converters.topojson import TopoJSONConverter
+from mtu.converters import get_converter, get_supported_formats
+from mtu.converters.base import ConversionResult
+from mtu.converters.geojson import GeoJSONConverter
+from mtu.converters.topojson import TopoJSONConverter
 
 
 class TestConverterRegistry:

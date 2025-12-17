@@ -13,8 +13,8 @@ Supported formats:
 - GPX (.gpx) - requires gpxpy
 """
 
-from mapbox_tileset_uploader.converters.base import BaseConverter, ConversionResult
-from mapbox_tileset_uploader.converters.registry import (
+from mtu.converters.base import BaseConverter, ConversionResult
+from mtu.converters.registry import (
     ConverterRegistry,
     get_converter,
     get_supported_formats,

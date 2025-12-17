@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "mapbox-tileset-uploader"
+name = "mtu"
 version = "0.2.0"
 description = "A CLI tool to upload GeoJSON, TopoJSON, Shapefile, GeoPackage, and other GIS formats to Mapbox as vector tilesets"
 readme = "README.md"
@@ -92,8 +92,7 @@ all = [
 ]
 
 [project.scripts]
-mapbox-tileset-uploader = "mapbox_tileset_uploader.cli:main"
-mtu = "mapbox_tileset_uploader.cli:main"
+mtu = "mtu.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/im4sea/mapbox-tileset-uploader"
@@ -102,7 +101,7 @@ Repository = "https://github.com/im4sea/mapbox-tileset-uploader"
 Issues = "https://github.com/im4sea/mapbox-tileset-uploader/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mapbox_tileset_uploader"]
+packages = ["src/mtu"]
 
 [tool.hatch.build.targets.sdist]
 include = [

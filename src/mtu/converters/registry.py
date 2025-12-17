@@ -5,7 +5,7 @@ Converter registry for auto-detecting and loading format converters.
 from pathlib import Path
 from typing import Any
 
-from mapbox_tileset_uploader.converters.base import BaseConverter
+from mtu.converters.base import BaseConverter
 
 
 class ConverterRegistry:
@@ -153,39 +153,39 @@ def register_converter(converter_class: type[BaseConverter]) -> type[BaseConvert
 def _register_builtin_converters() -> None:
     """Register all built-in converters."""
     # Import converters to trigger registration
-    from mapbox_tileset_uploader.converters import (
+    from mtu.converters import (
         geojson,  # noqa: F401
         topojson,  # noqa: F401
     )
 
     # Optional converters - only register if dependencies available
     try:
-        from mapbox_tileset_uploader.converters import shapefile  # noqa: F401
+        from mtu.converters import shapefile  # noqa: F401
     except ImportError:
         pass
 
     try:
-        from mapbox_tileset_uploader.converters import geopackage  # noqa: F401
+        from mtu.converters import geopackage  # noqa: F401
     except ImportError:
         pass
 
     try:
-        from mapbox_tileset_uploader.converters import kml  # noqa: F401
+        from mtu.converters import kml  # noqa: F401
     except ImportError:
         pass
 
     try:
-        from mapbox_tileset_uploader.converters import flatgeobuf  # noqa: F401
+        from mtu.converters import flatgeobuf  # noqa: F401
     except ImportError:
         pass
 
     try:
-        from mapbox_tileset_uploader.converters import geoparquet  # noqa: F401
+        from mtu.converters import geoparquet  # noqa: F401
     except ImportError:
         pass
 
     try:
-        from mapbox_tileset_uploader.converters import gpx  # noqa: F401
+        from mtu.converters import gpx  # noqa: F401
     except ImportError:
         pass
 

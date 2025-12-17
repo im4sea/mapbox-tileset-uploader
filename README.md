@@ -2,7 +2,7 @@
 
 A CLI tool and Python library to upload GIS data to Mapbox as vector tilesets. Supports multiple geospatial formats with a modular architecture.
 
-[![PyPI version](https://badge.fury.io/py/mapbox-tileset-uploader.svg)](https://badge.fury.io/py/mapbox-tileset-uploader)
+[![PyPI version](https://badge.fury.io/py/mtu.svg)](https://badge.fury.io/py/mtu)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -23,39 +23,39 @@ A CLI tool and Python library to upload GIS data to Mapbox as vector tilesets. S
 ### Basic Installation (GeoJSON & TopoJSON only)
 
 ```bash
-pip install mapbox-tileset-uploader
+pip install mtu
 ```
 
 ### With Optional Format Support
 
 ```bash
 # Shapefile support
-pip install mapbox-tileset-uploader[shapefile]
+pip install mtu[shapefile]
 
 # GeoPackage, KML, FlatGeobuf support (via fiona)
-pip install mapbox-tileset-uploader[fiona]
+pip install mtu[fiona]
 
 # GeoParquet support
-pip install mapbox-tileset-uploader[geoparquet]
+pip install mtu[geoparquet]
 
 # GPX support
-pip install mapbox-tileset-uploader[gpx]
+pip install mtu[gpx]
 
 # Geometry validation (via shapely)
-pip install mapbox-tileset-uploader[validation]
+pip install mtu[validation]
 
 # All formats and validation
-pip install mapbox-tileset-uploader[all-formats]
+pip install mtu[all-formats]
 
 # All features including dev tools
-pip install mapbox-tileset-uploader[all]
+pip install mtu[all]
 ```
 
 ### Install from Source
 
 ```bash
-git clone https://github.com/im4sea/mapbox-tileset-uploader.git
-cd mapbox-tileset-uploader
+git clone https://github.com/im4sea/mtu.git
+cd mtu
 pip install -e ".[all]"
 ```
 
@@ -152,7 +152,7 @@ export MAPBOX_USERNAME="your-username"
 
 ## CLI Usage
 
-The package provides two command aliases: `mapbox-tileset-uploader` and `mtu` (short form).
+The package provides two command aliases: `mtu` and `mtu` (short form).
 
 ### Upload from URL
 
@@ -257,8 +257,8 @@ mtu upload --file data.geojson --id test --name "Test" --dry-run
 ## Python API Usage
 
 ```python
-from mapbox_tileset_uploader import TilesetUploader
-from mapbox_tileset_uploader.uploader import TilesetConfig
+from mtu import TilesetUploader
+from mtu.uploader import TilesetConfig
 
 # Initialize uploader (uses environment variables by default)
 uploader = TilesetUploader()
@@ -316,7 +316,7 @@ if results.validation_result:
 ### Using Format Converters
 
 ```python
-from mapbox_tileset_uploader.converters import get_converter, get_supported_formats
+from mtu.converters import get_converter, get_supported_formats
 
 # List available formats
 formats = get_supported_formats()
@@ -339,7 +339,7 @@ result = converter.convert("data.gpkg", layer_name="boundaries")
 ### Geometry Validation
 
 ```python
-from mapbox_tileset_uploader import validate_geojson, GeometryValidator
+from mtu import validate_geojson, GeometryValidator
 
 # Quick validation
 result = validate_geojson(geojson_data)
@@ -363,7 +363,7 @@ for warning in result.warnings:
 ### TopoJSON Conversion
 
 ```python
-from mapbox_tileset_uploader.converters import get_converter
+from mtu.converters import get_converter
 
 # Convert TopoJSON to GeoJSON
 converter = get_converter(format_name="topojson")
@@ -434,7 +434,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install mapbox-tileset-uploader
+        run: pip install mtu
 
       - name: Upload tileset
         env:
@@ -452,8 +452,8 @@ jobs:
 ### Setup
 
 ```bash
-git clone https://github.com/im4sea/mapbox-tileset-uploader.git
-cd mapbox-tileset-uploader
+git clone https://github.com/im4sea/mtu.git
+cd mtu
 pip install -e ".[all]"
 ```
 

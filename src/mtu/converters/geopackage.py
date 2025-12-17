@@ -5,8 +5,8 @@ GeoPackage converter using fiona.
 from pathlib import Path
 from typing import Any
 
-from mapbox_tileset_uploader.converters.base import BaseConverter, ConversionResult
-from mapbox_tileset_uploader.converters.registry import register_converter
+from mtu.converters.base import BaseConverter, ConversionResult
+from mtu.converters.registry import register_converter
 
 
 @register_converter

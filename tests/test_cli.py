@@ -2,7 +2,7 @@
 
 from click.testing import CliRunner
 
-from mapbox_tileset_uploader.cli import main
+from mtu.cli import main
 
 
 class TestCLI:

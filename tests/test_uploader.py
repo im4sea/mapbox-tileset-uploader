@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from mapbox_tileset_uploader.uploader import TilesetConfig, TilesetUploader, UploadResult
+from mtu.uploader import TilesetConfig, TilesetUploader, UploadResult
 
 
 class TestTilesetConfig:

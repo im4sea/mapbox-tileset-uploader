@@ -214,31 +214,9 @@ jobs:
           mtu --version
           mtu formats
 
-  publish-testpypi:
-    name: Publish to TestPyPI
-    needs: test-install
-    runs-on: ubuntu-latest
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/mtu
-    permissions:
-      id-token: write
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
-      - name: Publish to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          skip-existing: true
-
   publish-pypi:
     name: Publish to PyPI
-    needs: [version-bump, publish-testpypi]
+    needs: [version-bump, test-install]
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -262,5 +240,4 @@ jobs:
           echo "**Version:** ${{ needs.version-bump.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- 📦 [PyPI](https://pypi.org/project/mtu/${{ needs.version-bump.outputs.new_version }}/)" >> $GITHUB_STEP_SUMMARY
-          echo "- 🧪 [TestPyPI](https://test.pypi.org/project/mtu/${{ needs.version-bump.outputs.new_version }}/)" >> $GITHUB_STEP_SUMMARY
           echo "- 🏷️ [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v${{ needs.version-bump.outputs.new_version }})" >> $GITHUB_STEP_SUMMARY

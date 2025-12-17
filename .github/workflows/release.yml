@@ -1,21 +1,162 @@
-name: Release to PyPI
+name: Release
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version to release (leave empty to use current version)'
+      bump_type:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: 'patch'
+      prerelease:
+        description: 'Mark as pre-release'
         required: false
-        type: string
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Dry run (no publish, no tag)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
+  version-bump:
+    name: Bump version and create release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Get current version
+        id: current
+        run: |
+          CURRENT_VERSION=$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml)
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Calculate new version
+        id: bump
+        run: |
+          CURRENT="${{ steps.current.outputs.version }}"
+          BUMP_TYPE="${{ inputs.bump_type }}"
+          
+          # Parse version parts
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          
+          # Bump based on type
+          case "$BUMP_TYPE" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION (bumped $BUMP_TYPE)"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          echo "## What's Changed" > changelog.md
+          echo "" >> changelog.md
+          
+          if [ -z "$LATEST_TAG" ]; then
+            echo "Generating changelog from all commits..."
+            git log --pretty=format:"* %s (%h)" >> changelog.md
+          else
+            echo "Generating changelog since $LATEST_TAG..."
+            git log ${LATEST_TAG}..HEAD --pretty=format:"* %s (%h)" >> changelog.md
+          fi
+          
+          echo "" >> changelog.md
+          echo "" >> changelog.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${LATEST_TAG:-initial}...v${{ steps.bump.outputs.new_version }}" >> changelog.md
+          
+          # Output for use in release
+          {
+            echo 'changelog<<EOF'
+            cat changelog.md
+            echo EOF
+          } >> $GITHUB_OUTPUT
+          
+          echo "--- Generated Changelog ---"
+          cat changelog.md
+
+      - name: Update version in pyproject.toml
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          sed -i 's/^version = "[^"]*"/version = "${{ steps.bump.outputs.new_version }}"/' pyproject.toml
+          echo "Updated pyproject.toml:"
+          grep "^version" pyproject.toml
+
+      - name: Commit version bump
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }}"
+          git push
+
+      - name: Create GitHub Release
+        if: ${{ inputs.dry_run != true }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.bump.outputs.new_version }}
+          name: v${{ steps.bump.outputs.new_version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          prerelease: ${{ inputs.prerelease }}
+          generate_release_notes: false
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run == true }}
+        run: |
+          echo "## 🧪 Dry Run Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Current version:** ${{ steps.current.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**New version:** ${{ steps.bump.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Bump type:** ${{ inputs.bump_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Changelog Preview" >> $GITHUB_STEP_SUMMARY
+          cat changelog.md >> $GITHUB_STEP_SUMMARY
+
   build:
     name: Build distribution
+    needs: version-bump
+    if: ${{ inputs.dry_run != true }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main  # Get the updated version
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -26,6 +167,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install build twine
+
+      - name: Verify version
+        run: |
+          VERSION=$(grep -Po '(?<=^version = ")[^"]*' pyproject.toml)
+          echo "Building version: $VERSION"
+          if [ "$VERSION" != "${{ needs.version-bump.outputs.new_version }}" ]; then
+            echo "::error::Version mismatch! Expected ${{ needs.version-bump.outputs.new_version }}, got $VERSION"
+            exit 1
+          fi
 
       - name: Build package
         run: python -m build
@@ -88,15 +238,13 @@ jobs:
 
   publish-pypi:
     name: Publish to PyPI
-    needs: publish-testpypi
+    needs: [version-bump, publish-testpypi]
     runs-on: ubuntu-latest
     environment:
       name: pypi
       url: https://pypi.org/p/mtu
     permissions:
       id-token: write
-    # Only publish to PyPI on release events
-    if: github.event_name == 'release'
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -106,3 +254,13 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Release summary
+        run: |
+          echo "## 🚀 Release Published!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.version-bump.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 [PyPI](https://pypi.org/project/mtu/${{ needs.version-bump.outputs.new_version }}/)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧪 [TestPyPI](https://test.pypi.org/project/mtu/${{ needs.version-bump.outputs.new_version }}/)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏷️ [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v${{ needs.version-bump.outputs.new_version }})" >> $GITHUB_STEP_SUMMARY

@@ -2,11 +2,16 @@
 
 A CLI tool and Python library to upload GIS data to Mapbox as vector tilesets. Supports multiple geospatial formats with a modular architecture.
 
-[![PyPI version](https://badge.fury.io/py/mtu.svg)](https://badge.fury.io/py/mtu)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![PyPI version](https://img.shields.io/pypi/v/mtu.svg)](https://pypi.org/project/mtu/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/mtu.svg)](https://pypi.org/project/mtu/)
+[![Python 3.10+](https://img.shields.io/pypi/pyversions/mtu.svg)](https://pypi.org/project/mtu/)
+[![CI](https://github.com/im4sea/mapbox-tileset-uploader/actions/workflows/ci.yml/badge.svg)](https://github.com/im4sea/mapbox-tileset-uploader/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 ## Features
+
 
 - 📤 Upload GIS files to Mapbox Tiling Service (MTS)
 - 🗺️ **Multi-format support**: GeoJSON, TopoJSON, Shapefile, GeoPackage, KML/KMZ, FlatGeobuf, GeoParquet, GPX

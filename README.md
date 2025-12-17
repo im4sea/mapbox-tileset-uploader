@@ -157,7 +157,7 @@ export MAPBOX_USERNAME="your-username"
 
 ## CLI Usage
 
-The package provides two command aliases: `mtu` and `mtu` (short form).
+The CLI command is `mtu`.
 
 ### Upload from URL
 

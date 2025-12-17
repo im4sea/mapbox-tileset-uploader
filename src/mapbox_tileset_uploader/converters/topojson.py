@@ -4,7 +4,7 @@ TopoJSON to GeoJSON converter.
 
 import json
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 from mapbox_tileset_uploader.converters.base import BaseConverter, ConversionResult
 from mapbox_tileset_uploader.converters.registry import register_converter
@@ -21,7 +21,7 @@ class TopoJSONConverter(BaseConverter):
 
     def convert(
         self,
-        source: Union[str, Path, dict[str, Any]],
+        source: str | Path | dict[str, Any],
         object_name: str | None = None,
         **options: Any,
     ) -> ConversionResult:
@@ -203,7 +203,7 @@ class TopoJSONConverter(BaseConverter):
 
     def _transform_point(
         self,
-        point: list[Union[int, float]],
+        point: list[int | float],
         transform: dict[str, Any] | None,
     ) -> list[float]:
         """Apply transform to a point."""

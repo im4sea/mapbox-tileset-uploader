@@ -4,7 +4,6 @@ Command-line interface for Mapbox Tileset Uploader.
 
 import json
 import sys
-from typing import Optional
 
 import click
 
@@ -112,7 +111,7 @@ def formats() -> None:
 @click.option("--verbose", "-v", is_flag=True, help="Show all warnings including info-level")
 def validate(
     file_path: str,
-    format_hint: Optional[str],
+    format_hint: str | None,
     verbose: bool,
 ) -> None:
     """
@@ -207,23 +206,23 @@ def validate(
 @click.option("--token", envvar="MAPBOX_ACCESS_TOKEN", help="Mapbox access token")
 @click.option("--username", envvar="MAPBOX_USERNAME", help="Mapbox username")
 def upload(
-    url: Optional[str],
-    file_path: Optional[str],
+    url: str | None,
+    file_path: str | None,
     tileset_id: str,
     tileset_name: str,
-    format_hint: Optional[str],
-    source_id: Optional[str],
+    format_hint: str | None,
+    source_id: str | None,
     layer_name: str,
     min_zoom: int,
     max_zoom: int,
     description: str,
     attribution: str,
-    recipe: Optional[str],
-    work_dir: Optional[str],
+    recipe: str | None,
+    work_dir: str | None,
     no_validate: bool,
     dry_run: bool,
-    token: Optional[str],
-    username: Optional[str],
+    token: str | None,
+    username: str | None,
 ) -> None:
     """
     Upload GIS data to Mapbox as a vector tileset.
@@ -341,8 +340,8 @@ def upload(
 def convert(
     input_file: str,
     output_file: str,
-    format_hint: Optional[str],
-    object_name: Optional[str],
+    format_hint: str | None,
+    object_name: str | None,
     pretty: bool,
 ) -> None:
     """
@@ -392,7 +391,7 @@ def convert(
 @main.command("list-sources")
 @click.option("--token", envvar="MAPBOX_ACCESS_TOKEN", help="Mapbox access token")
 @click.option("--username", envvar="MAPBOX_USERNAME", help="Mapbox username")
-def list_sources(token: Optional[str], username: Optional[str]) -> None:
+def list_sources(token: str | None, username: str | None) -> None:
     """
     List all tileset sources for your account.
 
@@ -426,7 +425,7 @@ def list_sources(token: Optional[str], username: Optional[str]) -> None:
 @main.command("list-tilesets")
 @click.option("--token", envvar="MAPBOX_ACCESS_TOKEN", help="Mapbox access token")
 @click.option("--username", envvar="MAPBOX_USERNAME", help="Mapbox username")
-def list_tilesets(token: Optional[str], username: Optional[str]) -> None:
+def list_tilesets(token: str | None, username: str | None) -> None:
     """
     List all tilesets for your account.
 
@@ -468,8 +467,8 @@ def list_tilesets(token: Optional[str], username: Optional[str]) -> None:
 @click.option("--yes", "-y", is_flag=True, help="Skip confirmation")
 def delete_source(
     source_id: str,
-    token: Optional[str],
-    username: Optional[str],
+    token: str | None,
+    username: str | None,
     yes: bool,
 ) -> None:
     """
@@ -502,8 +501,8 @@ def delete_source(
 @click.option("--yes", "-y", is_flag=True, help="Skip confirmation")
 def delete_tileset(
     tileset_id: str,
-    token: Optional[str],
-    username: Optional[str],
+    token: str | None,
+    username: str | None,
     yes: bool,
 ) -> None:
     """

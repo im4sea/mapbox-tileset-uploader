@@ -3,7 +3,7 @@ Converter registry for auto-detecting and loading format converters.
 """
 
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 from mapbox_tileset_uploader.converters.base import BaseConverter
 
@@ -45,8 +45,8 @@ class ConverterRegistry:
     @classmethod
     def get_converter(
         cls,
-        format_name: Optional[str] = None,
-        file_path: Optional[Union[str, Path]] = None,
+        format_name: str | None = None,
+        file_path: str | Path | None = None,
     ) -> BaseConverter:
         """
         Get a converter instance by format name or file path.
@@ -114,7 +114,7 @@ class ConverterRegistry:
         return True
 
     @classmethod
-    def is_supported(cls, file_path: Union[str, Path]) -> bool:
+    def is_supported(cls, file_path: str | Path) -> bool:
         """
         Check if a file format is supported.
 
@@ -133,8 +133,8 @@ class ConverterRegistry:
 
 # Convenience functions
 def get_converter(
-    format_name: Optional[str] = None,
-    file_path: Optional[Union[str, Path]] = None,
+    format_name: str | None = None,
+    file_path: str | Path | None = None,
 ) -> BaseConverter:
     """Get a converter instance. See ConverterRegistry.get_converter."""
     return ConverterRegistry.get_converter(format_name, file_path)

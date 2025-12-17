@@ -5,7 +5,7 @@ Base converter interface for GIS format conversion.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 
 @dataclass
@@ -79,7 +79,7 @@ class BaseConverter(ABC):
             )
 
     @classmethod
-    def can_handle(cls, file_path: Union[str, Path]) -> bool:
+    def can_handle(cls, file_path: str | Path) -> bool:
         """
         Check if this converter can handle the given file.
 
@@ -101,7 +101,7 @@ class BaseConverter(ABC):
     @abstractmethod
     def convert(
         self,
-        source: Union[str, Path, dict[str, Any]],
+        source: str | Path | dict[str, Any],
         **options: Any,
     ) -> ConversionResult:
         """
@@ -138,7 +138,7 @@ class BaseConverter(ABC):
         """
         pass
 
-    def validate_source(self, source: Union[str, Path, dict[str, Any]]) -> None:
+    def validate_source(self, source: str | Path | dict[str, Any]) -> None:
         """
         Validate the source before conversion.
 

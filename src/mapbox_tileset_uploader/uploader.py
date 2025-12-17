@@ -9,7 +9,7 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 import requests
 
@@ -163,7 +163,7 @@ class TilesetUploader:
 
     def upload_from_file(
         self,
-        file_path: Union[str, Path],
+        file_path: str | Path,
         config: TilesetConfig,
         format_hint: str | None = None,
         dry_run: bool = False,

@@ -5,7 +5,7 @@ Shapefile converter using pyshp or fiona.
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 from mapbox_tileset_uploader.converters.base import BaseConverter, ConversionResult
 from mapbox_tileset_uploader.converters.registry import register_converter
@@ -22,7 +22,7 @@ class ShapefileConverter(BaseConverter):
 
     def convert(
         self,
-        source: Union[str, Path, dict[str, Any]],
+        source: str | Path | dict[str, Any],
         encoding: str = "utf-8",
         **options: Any,
     ) -> ConversionResult:
@@ -128,7 +128,7 @@ class ShapefileConverter(BaseConverter):
             temp_path.unlink(missing_ok=True)
 
     @classmethod
-    def can_handle(cls, file_path: Union[str, Path]) -> bool:
+    def can_handle(cls, file_path: str | Path) -> bool:
         """Check if this is a shapefile."""
         path = Path(file_path)
         suffix = path.suffix.lower()

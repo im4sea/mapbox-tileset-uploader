@@ -5,17 +5,17 @@ Provides warnings for geometry issues without modifying the data.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
 class ValidationWarning:
     """A single validation warning."""
 
-    feature_index: Optional[int]
+    feature_index: int | None
     """Index of the feature with the issue, or None for global issues."""
 
-    feature_id: Optional[Any]
+    feature_id: Any | None
     """ID of the feature, if available."""
 
     warning_type: str
@@ -269,7 +269,7 @@ class GeometryValidator:
         self,
         geometry: dict[str, Any],
         feature_index: int,
-        feature_id: Optional[Any],
+        feature_id: Any | None,
     ) -> list[ValidationWarning]:
         """Validate a geometry."""
         warnings: list[ValidationWarning] = []
@@ -336,7 +336,7 @@ class GeometryValidator:
         self,
         coord: list[float],
         feature_index: int,
-        feature_id: Optional[Any],
+        feature_id: Any | None,
     ) -> list[ValidationWarning]:
         """Validate a single coordinate."""
         warnings: list[ValidationWarning] = []
@@ -390,7 +390,7 @@ class GeometryValidator:
         self,
         coords: list[list[float]],
         feature_index: int,
-        feature_id: Optional[Any],
+        feature_id: Any | None,
     ) -> list[ValidationWarning]:
         """Validate a LineString."""
         warnings: list[ValidationWarning] = []
@@ -432,7 +432,7 @@ class GeometryValidator:
         self,
         rings: list[list[list[float]]],
         feature_index: int,
-        feature_id: Optional[Any],
+        feature_id: Any | None,
     ) -> list[ValidationWarning]:
         """Validate a Polygon."""
         warnings: list[ValidationWarning] = []
@@ -557,7 +557,7 @@ class GeometryValidator:
         self,
         geometry: dict[str, Any],
         feature_index: int,
-        feature_id: Optional[Any],
+        feature_id: Any | None,
     ) -> list[ValidationWarning]:
         """Check geometry validity using shapely."""
         warnings: list[ValidationWarning] = []

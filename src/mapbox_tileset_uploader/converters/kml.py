@@ -5,7 +5,7 @@ KML/KMZ converter using fiona or fastkml.
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 from mapbox_tileset_uploader.converters.base import BaseConverter, ConversionResult
 from mapbox_tileset_uploader.converters.registry import register_converter
@@ -25,7 +25,7 @@ class KMLConverter(BaseConverter):
 
     def convert(
         self,
-        source: Union[str, Path, dict[str, Any]],
+        source: str | Path | dict[str, Any],
         **options: Any,
     ) -> ConversionResult:
         """
